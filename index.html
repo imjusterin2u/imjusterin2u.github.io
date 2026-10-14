@@ -1,1 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ms. Wold's Arcade</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg2: #121a33;
+    --card: #18213f;
+    --card-hi: #22305a;
+    --text: #f4f6fb;
+    --muted: #b6bfd6;
+    --reading: #3fd07a;   /* green */
+    --math: #4cc3ff;      /* blue */
+    --spelling: #ffb84c;  /* amber */
+    --focus: #ffe95c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse at top, #1d2a5a 0%, transparent 60%),
+      linear-gradient(var(--bg), var(--bg2));
+    color: var(--text);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
 
+  header { text-align: center; margin-bottom: 20px; }
+  h1 {
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    margin: 0;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 0 6px #ff4fd8, 0 0 18px #ff4fd8, 0 0 34px #7b5cff;
+  }
+  .sub { color: var(--muted); font-size: 1.15rem; margin-top: 6px; }
+
+  /* Filter buttons */
+  .filters {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 10px; margin: 20px 0 26px;
+  }
+  .filters button {
+    font: inherit; font-size: 1.1rem; font-weight: bold;
+    padding: 10px 20px; border-radius: 999px;
+    border: 3px solid #3a4775; background: var(--card); color: var(--text);
+    cursor: pointer;
+  }
+  .filters button[aria-pressed="true"] { background: #fff; color: #0b1020; border-color: #fff; }
+  .filters button:focus-visible { outline: 4px solid var(--focus); outline-offset: 3px; }
+
+  /* Game grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 18px;
+  }
+  .game {
+    display: flex; flex-direction: column; gap: 8px;
+    text-decoration: none; color: var(--text);
+    background: var(--card);
+    border: 3px solid var(--accent);
+    border-radius: 18px;
+    padding: 20px 18px 18px;
+    box-shadow: 0 0 0 0 var(--accent);
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .game:hover, .game:focus-visible {
+    background: var(--card-hi);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 0 22px -2px var(--accent);
+    outline: none;
+  }
+  .game:focus-visible { border-color: var(--focus); }
+  .icon { font-size: 3rem; line-height: 1; }
+  .name { font-size: 1.45rem; font-weight: bold; line-height: 1.2; }
+  .desc { color: var(--muted); font-size: 1.02rem; line-height: 1.35; flex: 1; }
+  .tag {
+    align-self: flex-start;
+    font-size: .85rem; font-weight: bold; letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 6px;
+    background: var(--accent); color: #0b1020;
+  }
+  .play {
+    margin-top: 6px; font-weight: bold; font-size: 1.1rem; color: var(--accent);
+  }
+  .reading  { --accent: var(--reading); }
+  .math     { --accent: var(--math); }
+  .spelling { --accent: var(--spelling); }
+
+  .hint { text-align: center; color: var(--muted); margin-top: 28px; font-size: .95rem; }
+  .hidden { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .game { transition: none; }
+    .game:hover, .game:focus-visible { transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🕹️ The Arcade</h1>
+    <div class="sub">Pick a game and press play!</div>
+  </header>
+
+  <nav class="filters" aria-label="Filter games">
+    <button data-filter="all" aria-pressed="true">All Games</button>
+    <button data-filter="reading" aria-pressed="false">📖 Reading</button>
+    <button data-filter="math" aria-pressed="false">➕ Math</button>
+    <button data-filter="spelling" aria-pressed="false">✏️ Spelling</button>
+  </nav>
+
+  <main class="grid" id="grid"></main>
+
+  <p class="hint">Tip: use the arrow keys to move between games and press Enter to play.</p>
+</div>
+
+<script>
+  // ===== EDIT YOUR GAMES HERE =====
+  // To add a game: copy one line, change the details. To hide one: delete its line.
+  // type must be "reading", "math", or "spelling".
+  const BASE = "https://imjusterin2u.github.io/";
+  const GAMES = [
+    { name: "Portal Chase",        icon: "🌀", type: "reading",  repo: "WRS_portal_chase",       desc: "Answer questions to unlock the portals and escape the maze." },
+    { name: "Word DNA Lab",        icon: "🧬", type: "reading",  repo: "WRSWordDNALab",          desc: "Help Dr. Helix crack the code across 7 lab zones." },
+    { name: "Word Defense",        icon: "🛡️", type: "reading",  repo: "WRS-word-defense",       desc: "Defend your base by reading words fast and accurately." },
+    { name: "Detective Case Files",icon: "🔍", type: "reading",  repo: "WRS-reading-case-files", desc: "Read the clues and solve the case, detective." },
+    { name: "The Step 2 Derby",    icon: "🏇", type: "reading",  repo: "step2_derby",            desc: "Race your horse to the finish line with Step 2 sounds." },
+    { name: "Word Battle Royale",  icon: "⚔️", type: "reading",  repo: "word-battle-royale",     desc: "Battle it out with words." },
+    { name: "Math Maze Chase",     icon: "🧮", type: "math",     repo: "Math_Maze_Chase",        desc: "Solve adding and subtracting problems to open the portals." },
+    { name: "Number Defense",      icon: "🚀", type: "math",     repo: "math-space-defense",     desc: "Protect space with place value, addition, and subtraction." },
+    { name: "Spelling Showdown",   icon: "🤠", type: "spelling", repo: "Spelling-Showdown",      desc: "Face off in a spelling duel." },
+    { name: "Cosmic War",          icon: "🌌", type: "reading",  repo: "CosmicWAR",              desc: "Blast off into a space battle." },
+    { name: "Mission Nebula",      icon: "🛸", type: "reading",  repo: "MissionNebulaY",         desc: "Complete your mission in the nebula." },
+  ];
+  // =================================
+
+  const grid = document.getElementById("grid");
+  const tagLabel = { reading: "Reading", math: "Math", spelling: "Spelling" };
+
+  GAMES.forEach(g => {
+    const a = document.createElement("a");
+    a.className = "game " + g.type;
+    a.dataset.type = g.type;
+    a.href = g.url || (BASE + g.repo + "/");
+    a.innerHTML =
+      `<span class="icon" aria-hidden="true">${g.icon}</span>
+       <span class="name">${g.name}</span>
+       <span class="tag">${tagLabel[g.type]}</span>
+       <span class="desc">${g.desc}</span>
+       <span class="play">▶ Play</span>`;
+    grid.appendChild(a);
+  });
+
+  // Filters
+  const buttons = document.querySelectorAll(".filters button");
+  buttons.forEach(btn => btn.addEventListener("click", () => {
+    const f = btn.dataset.filter;
+    buttons.forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+    grid.querySelectorAll(".game").forEach(card => {
+      card.classList.toggle("hidden", f !== "all" && card.dataset.type !== f);
+    });
+  }));
+
+  // Arrow-key navigation between visible cards (for iPad keyboards)
+  document.addEventListener("keydown", e => {
+    if (!["ArrowRight","ArrowLeft","ArrowDown","ArrowUp"].includes(e.key)) return;
+    const cards = [...grid.querySelectorAll(".game:not(.hidden)")];
+    if (!cards.length) return;
+    let i = cards.indexOf(document.activeElement);
+    if (i === -1) { cards[0].focus(); e.preventDefault(); return; }
+    const cols = Math.max(1, Math.round(grid.clientWidth / cards[0].getBoundingClientRect().width));
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols }[e.key];
+    const next = Math.min(cards.length - 1, Math.max(0, i + step));
+    cards[next].focus();
+    e.preventDefault();
+  });
+</script>
+</body>
+</html>
